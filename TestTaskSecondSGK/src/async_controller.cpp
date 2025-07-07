@@ -1,5 +1,8 @@
 #include "../include/async_controller.hpp"
 
+#include <cstddef>
+
+
 ByteStreamController::ByteStreamController(size_t max_buffer_size)
     : max_buffer_size_(max_buffer_size), stopped_(false) {
   buffer_.reserve(max_buffer_size);
@@ -55,8 +58,10 @@ ByteStreamController::Result ByteStreamController::sync_get_data(
     return Result{ByteVec{}, ErrorCode::ControllerStopped, 0, 0};
   }
 
-  const size_t bytes_to_take = std::min({buffer_.size(), max_bytes});
-  const size_t actual_bytes = std::max(bytes_to_take, min_bytes);
+  const size_t bytes_available = buffer_.size();
+  const size_t bytes_to_take =
+      std::min({bytes_available, max_bytes, bytes_available});
+          const size_t actual_bytes = std::max(bytes_to_take, min_bytes);
 
   ByteVec result;
   result.reserve(actual_bytes);

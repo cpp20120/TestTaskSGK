@@ -36,7 +36,7 @@
 
 #файлы сборки
 .ninja_*
-CMakeFiles/*
+CMakeFiles
 Testing/*
 .cmake/*
 CMakeCache.txt

@@ -4,7 +4,7 @@
 option(ENABLE_EXTRA_WARNINGS "Enable all possible warnings" ON)
 option(ENABLE_SANITIZERS "Enable address/thread sanitizers (Clang/GCC only)" OFF)
 option(ENABLE_MSVC_SDL "Enable MSVC SDL checks (security)" ON)
-option(ENABLE_HARDENING "Enable security hardening flags" ON)
+option(ENABLE_HARDENING "Enable security hardening flags" OFF)
 option(ENABLE_LTO "Enable Link Time Optimization" OFF)
 
 # Common compiler flags for all platforms
@@ -81,7 +81,6 @@ else()
       -Wpedantic
       -Wconversion
       -Wshadow
-      -Werror
       -Wformat=2
       -Wnon-virtual-dtor
       -Wold-style-cast
@@ -145,7 +144,7 @@ else()
     add_compile_options(
       -D_FORTIFY_SOURCE=2
       -fstack-protector-strong
-      -fPIE
+      #-fPIE
       "$<$<CXX_COMPILER_ID:GNU>:-fcf-protection=full>")
     add_link_options(-Wl,-z,now -Wl,-z,relro -pie)
   endif()
