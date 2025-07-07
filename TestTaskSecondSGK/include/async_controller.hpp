@@ -60,7 +60,8 @@ class ByteStreamController {
     NoError,            ///< Operation completed successfully
     BufferOverflow,     ///< Operation would exceed buffer capacity
     ControllerStopped,  ///< Operation failed because controller was stopped
-    Timeout             ///< Operation timed out
+    Timeout,            ///< Operation timed out
+    InvalidArgs         ///< Operation has invalid args    
   };
 
   /**

@@ -1,7 +1,7 @@
 #include "../include/async_controller.hpp"
 
+#include <algorithm>
 #include <cstddef>
-
 
 ByteStreamController::ByteStreamController(size_t max_buffer_size)
     : max_buffer_size_(max_buffer_size), stopped_(false) {
@@ -46,6 +46,10 @@ ByteStreamController::ErrorCode ByteStreamController::async_add_data(
 
 ByteStreamController::Result ByteStreamController::sync_get_data(
     size_t min_bytes, size_t max_bytes, std::chrono::milliseconds timeout) {
+  if (min_bytes > max_bytes) {
+    return Result{ByteVec{}, ErrorCode::InvalidArgs, 0, buffer_.size()};
+  }
+
   std::unique_lock lock(mutex_);
 
   if (!cv_.wait_for(lock, timeout, [this, min_bytes] {
@@ -54,26 +58,28 @@ ByteStreamController::Result ByteStreamController::sync_get_data(
     return Result{ByteVec{}, ErrorCode::Timeout, 0, buffer_.size()};
   }
 
-  if (stopped_ && buffer_.empty()) {
-    return Result{ByteVec{}, ErrorCode::ControllerStopped, 0, 0};
+  if (stopped_) {
+    if (buffer_.empty()) {
+      return Result{ByteVec{}, ErrorCode::ControllerStopped, 0, 0};
+    }
   }
 
   const size_t bytes_available = buffer_.size();
-  const size_t bytes_to_take =
-      std::min({bytes_available, max_bytes, bytes_available});
-          const size_t actual_bytes = std::max(bytes_to_take, min_bytes);
+  const size_t bytes_to_take = std::min(bytes_available, max_bytes);
 
   ByteVec result;
-  result.reserve(actual_bytes);
+  result.reserve(bytes_to_take);
   result.insert(
       result.end(), std::make_move_iterator(buffer_.begin()),
       std::make_move_iterator(buffer_.begin() +
-                              static_cast<std::ptrdiff_t>(actual_bytes)));
+                              static_cast<std::ptrdiff_t>(bytes_to_take)));
 
   buffer_.erase(buffer_.begin(),
-                buffer_.begin() + static_cast<std::ptrdiff_t>(actual_bytes));
+                buffer_.begin() + static_cast<std::ptrdiff_t>(bytes_to_take));
 
-  return Result{std::move(result), ErrorCode::NoError, 0, buffer_.size()};
+  return Result{std::move(result),
+                stopped_ ? ErrorCode::ControllerStopped : ErrorCode::NoError,
+                bytes_to_take, buffer_.size()};
 }
 
 size_t ByteStreamController::current_buffer_size() const {
